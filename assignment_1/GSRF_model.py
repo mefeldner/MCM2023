@@ -1,4 +1,4 @@
-from sklearn.metrics import classification_report
+from sklearn.metrics import classification_report, mean_squared_error, mean_absolute_error
 from sklearn.model_selection import train_test_split
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
@@ -14,10 +14,12 @@ print(data['1 try'].value_counts())
 
 # Get target data
 y = data['1 try']  # only for 1 try, target acts as label we need to predict
+
 print(y)
 # Load x variables into a pandas dataframe with columns
 
 # !! Had to drop non integer columns - how can we convert this into values
+#X = data.drop(['1 try'], axis=1)
 X = data.drop(['1 try','Date','Word'], axis=1)
 print(X)
 # Divide into train and test
@@ -66,11 +68,25 @@ rf_grid = GridSearchCV(estimator=rf_model, param_grid=param_grid, cv=10, verbose
 # Fit the GridSearchCV object to the training data
 rf_grid.fit(X_train, y_train)
 
-
 # Get the best parameters
 best_params = rf_grid.best_params_
 print("Best Parameters:", best_params)
 
+# Prediction on test set
+y_pred = rf_grid.predict(X_test)
+
 # Print train and test accuracies
 print(f'Train Accuracy: {rf_grid.score(X_train, y_train):.3f}')
 print(f'Test Accuracy: {rf_grid.score(X_test, y_test):.3f}')
+
+# Evaluate performance
+mse = mean_squared_error(y_test, y_pred)
+print(f'Mean Squared Error on Test Set: {mse:.3f}')
+
+mae = mean_absolute_error(y_test, y_pred)
+print(f'Mean Absolute Error on Test Set: {mse:.3f}')
+
+# Predict for EERIE by inputting values for fWord, fLetter, and rep
+example_values = [[.00024, 0.418799, 1.5]]
+predictions = rf_grid.predict(example_values)
+print("Predicted Score:", predictions)
