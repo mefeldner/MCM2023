@@ -12,24 +12,20 @@ class CustomDataset(Dataset):
         self.data = pd.read_csv(csv_file, skiprows=1)
         self.data = self.data[start_index: end_index]
         self.data.head()
-        print(self.data)
-
-
 
         # Assuming 'Date' is in 'YYYY-MM-DD' format
-        # Reverse the order of the 'Date' Column - NEED TO DO
-        self.data['Date'] = pd.to_datetime(self.data['Date'])
+        # Reverse the order of the 'Date' Column
+        self.data['Date'] = pd.to_datetime(self.data['Date'], format='%m/%d/%y')
         # Identify the reference event's timestamp and convert to days
-        reference_event_timestamp = pd.to_datetime('2022-01-07 00:00:00')
+        reference_event_timestamp = pd.to_datetime(self.data['Date'][299], format='%m/%d/%y')
         # Calculate the time since the reference event in integers
         self.data['Date'] = (self.data['Date'] - reference_event_timestamp).dt.days
         self.data['Numeric_Date'] = self.data['Date']
-        #self.data['Numeric_Date'] = (self.data['Date'] - pd.Timestamp("2022-01-11")) // pd.Timedelta('1d')
+        # self.data['Numeric_Date'] = (self.data['Date'] - pd.Timestamp("2022-01-11")) // pd.Timedelta('1d')
 
         self.features = torch.tensor(self.data['Numeric_Date'].values, dtype=torch.float32).view(-1, 1, 1)
         self.labels = torch.tensor(self.data['Number of  reported results'].values, dtype=torch.float32)
-        print(self.features)
-        print(self.labels)
+
 
 
     def __len__(self):
@@ -74,7 +70,7 @@ dataset = CustomDataset('problemcData.csv', start_index, end_index)
 # Example usage
 input_size = 1
 hidden_size = 8
-num_layers = 3
+num_layers = 2
 output_size = 1
 batch_size = 10
 sequence_length = 7
@@ -101,7 +97,7 @@ for epoch in range(num_epochs):
         loss.backward()
         optimizer.step()
 
-print(f'Epoch [{epoch + 1}/{num_epochs}], Loss: {loss.item():.4f}')
+#print(f'Epoch [{epoch + 1}/{num_epochs}], Loss: {loss.item():.4f}')
 
 # Save the trained model weights
 torch.save(model.state_dict(), 'path_to_your_trained_model_weights.pth')
@@ -112,13 +108,15 @@ with torch.no_grad():
         input_data, labels = batch
         output = model(input_data)
 
-print("Output Shape:", output.shape)
-print(output)
+#print("Output Shape:", output.shape)
+#print(output)
 output_values = output.numpy()
-print(output_values)
+#print(output_values)
+
+#mse = mean_squared_error(output, y_pred)
 
 # Plot the predicted values
-plt.plot(output.detach().numpy(), label='Predicted')
-plt.plot(labels.numpy(), label='True Labels')
-plt.legend()
-plt.show()
+#plt.plot(output.detach().numpy(), label='Predicted')
+#plt.plot(labels.numpy(), label='True Labels')
+#plt.legend()
+#plt.show()
