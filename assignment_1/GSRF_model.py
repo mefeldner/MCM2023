@@ -1,92 +1,59 @@
-from sklearn.metrics import classification_report, mean_squared_error, mean_absolute_error
-from sklearn.model_selection import train_test_split
 import pandas as pd
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import GridSearchCV
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.metrics import mean_squared_error, mean_absolute_error
+
+data = pd.read_csv('wordAttributes.csv')
 
 
-# Read the CSV file
-
-# Reading data in - make sure to change csv file to have correct name on local machine
-data = pd.read_csv('problemcData.csv',skiprows=1)  # Replace 'data.csv' with your actual file name
-data['1 try'].value_counts()
-print(data['1 try'].value_counts())
-
-# Get target data
-y = data['1 try']  # only for 1 try, target acts as label we need to predict
-
-print(y)
-# Load x variables into a pandas dataframe with columns
-
-# !! Had to drop non integer columns - how can we convert this into values
-#X = data.drop(['1 try'], axis=1)
-X = data.drop(['1 try','Date','Word'], axis=1)
+# establish target var, train and test split
+print(data.columns)
+X = data[['fWord', 'fLetter', 'rep']]
+# Remove error for prediction
+X = X.values
 print(X)
-# Divide into train and test
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, random_state=101)
-X_train.shape, X_test.shape
-
-# Definitley need to look at optimizing these hyperparameters
-
-# Number of trees in random forest
-n_estimators = [100]
-# Number of features to consider at every train_test_split
-max_features = [1]
-# Max number of levels in trees
-max_depth = [2, 4]
-# Minimum number of samples required to split a node
-min_samples_split = [2]
-# Min samples at each leaf node
-min_samples_leaf = [1, 2]
-# Method of selecting samples for training each tree
-bootstrap = [True, False]
+y = data['score']
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
 
-# Create the param grid (a dictionary)
+# set up hyperparams for the grid search
 param_grid = {
-   'n_estimators': n_estimators,
-   'max_features': max_features,
-   'max_depth': max_depth,
-   'min_samples_split': min_samples_split,
-   'min_samples_leaf': min_samples_leaf,
-   'bootstrap': bootstrap
+   'n_estimators': [10, 50, 100],
+   'max_depth': [None, 10, 20],
+   'min_samples_split': [2, 5, 10],
+   'min_samples_leaf': [1, 2, 4]
 }
 
 
-# Print the param grid
-print(param_grid)
+rf_model = RandomForestRegressor()
 
 
-# Create a RandomForestClassifier
-rf_model = RandomForestClassifier()
+# Create GridSearchCV object
+rf_grid = GridSearchCV(estimator=rf_model, param_grid=param_grid, cv=5, scoring='neg_mean_squared_error', n_jobs=-1)
 
 
-# Create a GridSearchCV object
-rf_grid = GridSearchCV(estimator=rf_model, param_grid=param_grid, cv=10, verbose=2, n_jobs=-1)
-
-
-# Fit the GridSearchCV object to the training data
 rf_grid.fit(X_train, y_train)
 
-# Get the best parameters
+
+# get best params
 best_params = rf_grid.best_params_
 print("Best Parameters:", best_params)
 
-# Prediction on test set
+
+# predictions on test set
 y_pred = rf_grid.predict(X_test)
 
-# Print train and test accuracies
-print(f'Train Accuracy: {rf_grid.score(X_train, y_train):.3f}')
-print(f'Test Accuracy: {rf_grid.score(X_test, y_test):.3f}')
 
-# Evaluate performance
+# evaluate performance
 mse = mean_squared_error(y_test, y_pred)
 print(f'Mean Squared Error on Test Set: {mse:.3f}')
 
+
 mae = mean_absolute_error(y_test, y_pred)
-print(f'Mean Absolute Error on Test Set: {mse:.3f}')
+print(f'Mean Absolute Error on Test Set: {mae:.3f}')
+
 
 # Predict for EERIE by inputting values for fWord, fLetter, and rep
-example_values = [[.00024, 0.418799, 1.5]]
+example_values = [[0.00024, 0.418799, 1.5]]
 predictions = rf_grid.predict(example_values)
 print("Predicted Score:", predictions)
